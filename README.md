@@ -14,6 +14,7 @@ Link to related data if stored on Egnyte
 ### Clone Repo
     git clone https://github.com/pclindustrial/github-template.git
     cd github-template.git
+    POST http://mortifier-endpoint.azurewebsites.net/api/blob_extraction/{project_id}/{guid}
 
 ### Setup venv
     py -m venv env
