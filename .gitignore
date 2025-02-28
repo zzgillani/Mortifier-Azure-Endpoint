@@ -1,0 +1,24 @@
+# Don't commit your venv file to git, as it can be quite large and is specific 
+# to your machine
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Don't commit data to github, as it can be quite large and is better kept in a
+# place on egnyte, so it can be accesed by others.
+data/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+
