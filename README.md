@@ -1,96 +1,84 @@
 # Mortifier Endpoint
-This API endpoint acts as a wrapper around the Mortifier CLI tool, allowing for faster and concurrent text extractions when working with large file batches. 
+This API endpoint acts as a wrapper around the Mortifier CLI tool, allowing for faster and concurrent text extractions when working with large file batches. Given a document's **project ID** and **file GUID**, it eliminates the need to download the document locally prior to running Mortifier.
 
 
 ### Method
-    GET http://mortifier-endpoint.azurewebsites.net/api/blob_extraction/{project_id}/{guid}
+    GET http://mortifier-endpoint.azurewebsites.net/api/blob_extraction/{project_id}/{file_guid}
 ### Parameters
-    - **project_id**: The GUID of the project, as defined as the container ID of the required file's at-rest Azure Blob storage location.
-    - **guid**: The GUID of the file as defined in the Azure blob.
+- **project_id**: The GUID of the project, as defined as the container ID of the required file's at-rest Azure Blob storage location.
+- **file_guid**: The GUID of the file as defined in the Azure blob.
 
+## Example Python Script
+Given a list of file GUIDs, the following Python code block runs and retrieves text extractions concurrently.
 
-
-
-# Quickstart
-## Pre-requisites
-> install python
-
-### Clone Repo
-    git clone https://github.com/pclindustrial/github-template.git
-    cd github-template.git
-    POST http://mortifier-endpoint.azurewebsites.net/api/blob_extraction/{project_id}/{guid}
-
-### Setup venv
-    py -m venv env
-    .\env\Scripts\activate
-    py -m pip install -r .\requirements.txt
-
-### Run Basic Command
-    cd src\
-    py sample.py
-
-## Formatting, Linting, and Static Analysis 
-- **Formatting** is the practice of converting formatting conventions to a standard form for things like whitepaces, quoting, comments, and newlines. In python, it’s dictated by PEP-8 and the Black formatter.  
-- **Linters** are tools that analyzes your code to find programming errors, bugs, and inconsistencies (ie. Unused import statements and variables)
-- **Ruff** is a Python linter and formatter
-  
-### Ruff installation
-    py -m pip install ruff
-
-### Ruff as a linter
-- To run Ruff as a linter, enter the following command into your terminal/Powershell: 
-- Uses ‘check’ as it’s keyword
-  
-      ruff check . note:This command lints ALL files in the directory
-      ruff check path/to/examplecode.py #this command lints a specific python file (in this case, a python file called “examplecode”)
-      ruff check path/to/folder1 #note this command lints all the files in the folder titled “directory1”'
-  
-### Ruff as a formatter
-- To run Ruff as a format, enter the following command into your terminal/Powershell: 
-- Uses ‘check’ as it’s keyword
-  
-      ruff format .  #note:This command formats ALL files in the directory
-      ruff format path/to/examplecode.py #this command formats a specific python file (in this case, a python file called “examplecode”)
-      ruff format path/to/folder1 #note this command formats all the files in the folder titled “directory1”
-
-### Pre-commit checks - automatic formatting/linting
--  A pre-commit check looks at your code when you commit our code/changes to GitHub and makes alterations to it before you push your code to the GitHub repo. 
--  You can add a pre-commit hook to your GitHub repo that automatically lints and formats your code.
-- There is one already set up in this repo, to run it, try:
-  
-      py -m pip install pre-commit  #you can also try "pre_commit"
+    import requests
+    import concurrent.futures
     
-      py -m pre-commit install
-
-- Check your pre-commit hook by running ‘git commit’, the pre-commit hooks will display a message on your terminal.
-##  Github Actions - integrating checks into the repo after a commit
-- Github Actions is a platform that allows you to automate your Github repo’s build,test, and deployment pipeline. When an event occurs (ie. When changes are pushed onto a branch), a GitHub Actions workflow will be triggered, and a series of events will run.
-- To create a workflow: https://docs.github.com/en/actions/using-workflows/creating-starter-workflows-for-your-organization
-
-## Static analysis with CodeQL manually:
-- Static analysis for code is the process of analyzing code for potential errors without needing to running the code. 
-- We can perform static analysis using CodeQL to find errors and vulnerabilities in our code.
-- CODEQL is a command-line tool that can be used to analyze code. CodeQL can be used to perform the following task:
-    - Perform academic research
-    - Demonstrate software
-    - Test CodeQL queries
-      
-**Documentation**
-- https://docs.github.com/en/code-security/codeql-cli/getting-started-with-the-codeql-cli/setting-up-the-codeql-cli
-- https://docs.github.com/en/code-security/codeql-cli/getting-started-with-the-codeql-cli
-      
-## CodeQL in precommits:
-- CodeQL can be integrated with GitHub’s pre-commit hooks. We can combine git’s precommit hooks with CodeQL to format code to CodeQL’s styling guidelines:
-    - https://github.com/github/codeql/blob/main/docs/ql-style-guide.md
-    - https://github.com/github/codeql/blob/main/docs/pre-commit-hook-setup.md
-
+    # Define list of file GUIDs here
+    file_guids = []  # Populate with actual GUIDs
     
+    # Specify project ID here
+    project_id = "your_project_id"
+    
+    total_guids = len(file_guids)
+    
+    # Base URL for the Azure Function
+    base_url = f"http://mortifier-endpoint.azurewebsites.net/api/blob_extraction/{project_id}"  
+    
+    # Define output directory
+    output_directory = "your/output/directory/path"
+    
+    # Error messages from failed GUIDs
+    failed_messages = []
+    
+    def fetch_and_save(i, file_guid):
+        """Fetch data from the endpoint for a given GUID and save the response as CSV.
+           Returns a tuple (success: bool, error_message: str)."""
+        url = f"{base_url}/{file_guid}"
+        
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                file_path = f'{output_directory}/guid_response_{i}_{file_guid}.csv'
+                with open(file_path, 'w', encoding='utf-8') as file:
+                    file.write(response.text)
+                print(f"Saved CSV for GUID {file_guid} at {file_path}")
+                return (True, None)
+            else:
+                error_message = f"Request {i}/{total_guids} for GUID {file_guid} failed: Status Code {response.status_code}"
+                print(error_message)
+                return (False, error_message)
+        except requests.exceptions.RequestException as e:
+            error_message = f"Request {i}/{total_guids} for GUID {file_guid} failed: {e}"
+            print(error_message)
+            return (False, error_message)
+    
+    failed_count = 0
+    completed_count = 0
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        # Submit all tasks, store the futures
+        futures = {executor.submit(fetch_and_save, i, row[0]): i for i, row in enumerate(file_guids.itertuples(index=False), start=1)}
+        
+        for future in concurrent.futures.as_completed(futures):
+            completed_count += 1
+            success, error_message = future.result()
+            if not success:
+                failed_count += 1
+                failed_messages.append(error_message)
+    
+    print(f"\nCompleted {total_guids} requests with {failed_count} failures.")
+    
+    # Log failed GUIDs
+    failed_log_file = '{output_directory}/failed_guids_log.txt'
+    with open(failed_log_file, 'w', encoding='utf-8') as log_file:
+        for message in failed_messages:
+            log_file.write(message + "\n")
+    
+    print(f"Failed messages have been written to {failed_log_file}")
 
- 
+**Note**: When running concurrently, please do not exceed 25 workers. A 20-worker process can handle:
+- 1,000 PDFs in ~6 minutes
+- 10,000 PDFs in ~30 minutes
 
 
-            
-
- 
-
- 
