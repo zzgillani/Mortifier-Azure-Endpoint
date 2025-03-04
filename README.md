@@ -4,7 +4,7 @@ This API endpoint acts as a wrapper around the Mortifier CLI tool, allowing for 
 
 ### Method
     GET http://mortifier-endpoint.azurewebsites.net/api/blob_extraction/{project_id}/{guid}
-#### Parameters
+### Parameters
     - **project_id**: The GUID of the project, as defined as the container ID of the required file's at-rest Azure Blob storage location.
     - **guid**: The GUID of the file as defined in the Azure blob.
 
