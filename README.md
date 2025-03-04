@@ -1,11 +1,15 @@
-# Project Name
-This is where you would write your project description, a short elevator pitch of what this project is, what its goals are, and how it intends to acheive those goals. 
+# Mortifier Endpoint
+This API endpoint acts as a wrapper around the Mortifier CLI tool, allowing for faster and concurrent text extractions when working with large file batches. 
 
-Please write over this README.md and populate the requirements.txt with the python packages your project uses as you progress your project. This is a template that is meant to be a guide on how to formulate a repo, and to be pulled as a template when creating a new one. Consider this structure as a guideline for project structure, and not necessarily a strict rule. 
 
-# Related Datasets
-Link to related data if stored on Egnyte
-> T:\Shared\13 PIMI\District Shared\Construction Services\Data Analysis
+### Method
+    GET http://mortifier-endpoint.azurewebsites.net/api/blob_extraction/{project_id}/{guid}
+#### Parameters
+    - **project_id**: The GUID of the project, as defined as the container ID of the required file's at-rest Azure Blob storage location.
+    - **guid**: The GUID of the file as defined in the Azure blob.
+
+
+
 
 # Quickstart
 ## Pre-requisites
